@@ -55,13 +55,13 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h5>🏆 Department CO2 Ranking</h5>
-                    <small class="text-muted">Lower is better!</small>
+                    <h5>🏆 Department Storage Change Ranking</h5>
+                    <small class="text-muted">Last @timeRangeDays days</small>
                 </div>
                 <div class="card-body">
-                    @if (departmentCO2.Any())
+                    @if (departmentChangePercentage.Any())
                     {
-                        @foreach (var (dept, co2, index) in departmentCO2.Select((kvp, i) => (kvp.Key, kvp.Value, i + 1)))
+                        @foreach (var (dept, change, index) in departmentChangePercentage.Select((kvp, i) => (kvp.Key, kvp.Value, i + 1)))
                         {
                             var badgeClass = index switch
                             {
@@ -71,13 +71,15 @@
                                 _ => "badge-secondary"
                             };
 
+                            var textClass = change < 0 ? "text-success" : change > 0 ? "text-danger" : "";
+
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <div>
                                     <span class="badge @badgeClass me-2">@index</span>
                                     @dept
                                 </div>
                                 <div>
-                                    <strong>@co2.ToString("F1") kg CO2</strong>
+                                    <strong class="@textClass">@(change.ToString("+0.0;-0.0;0"))%</strong>
                                 </div>
                             </div>
                         }
@@ -181,8 +183,10 @@
     private List<StorageUsage> recentUsage = new();
     private Dictionary<string, decimal> departmentCO2 = new();
     private Dictionary<string, decimal> departmentStorage = new();
+    private Dictionary<string, decimal> departmentChangePercentage = new();
     private decimal totalStorage = 0;
     private decimal totalCO2 = 0;
+    private int timeRangeDays = 30;
 
     protected override async Task OnInitializedAsync()
     {
@@ -197,16 +201,19 @@
 
             // Get latest records (not summing up over time)
             var latestUsages = await StorageService.GetLatestDepartmentUsageAsync();
-            recentUsage = await StorageService.GetRecentUsageAsync(30);
+            recentUsage = await StorageService.GetRecentUsageAsync(timeRangeDays);
 
             departmentCO2 = await StorageService.GetDepartmentTotalCO2Async();
             departmentStorage = await StorageService.GetDepartmentAverageStorageAsync();
 
+            // Get percentage change over time for each department
+            departmentChangePercentage = await StorageService.GetDepartmentStorageChangePercentageAsync(timeRangeDays);
+
             totalStorage = departmentStorage.Values.Sum();
             totalCO2 = departmentCO2.Values.Sum();
 
-            // Sort departmentCO2 by value (ascending - lower CO2 is better)
-            departmentCO2 = departmentCO2.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            // Sort departmentChangePercentage by value (ascending - lower change is better)
+            departmentChangePercentage = departmentChangePercentage.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
         }
         catch (Exception ex)
         {
