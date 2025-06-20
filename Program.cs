@@ -1,10 +1,20 @@
 using AuHackathon2025.Components;
+using AuHackathon2025.Data;
+using AuHackathon2025.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Register DbContext
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register Service
+builder.Services.AddScoped<StorageService>();
 
 var app = builder.Build();
 
