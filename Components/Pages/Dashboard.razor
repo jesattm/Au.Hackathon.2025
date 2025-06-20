@@ -33,18 +33,18 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-success text-white">
+            <div class="card bg-warning text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Departments</h5>
-                    <h3>@departments.Count</h3>
+                    <h5 class="card-title">Annual CO2 Impact</h5>
+                    <h3>@totalAnnualCO2.ToString("F2") kg/year</h3>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-info text-white">
+            <div class="card bg-success text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Records</h5>
-                    <h3>@recentUsage.Count</h3>
+                    <h5 class="card-title">Departments</h5>
+                    <h3>@departments.Count</h3>
                 </div>
             </div>
         </div>
@@ -103,11 +103,15 @@
                         @foreach (var kvp in departmentStorage.OrderByDescending(x => x.Value))
                         {
                             var percentage = totalStorage > 0 ? (kvp.Value / totalStorage * 100) : 0;
+                            var annualCO2 = kvp.Value * 0.00162m;
 
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between">
                                     <span>@kvp.Key</span>
-                                    <span><strong>@kvp.Value.ToString("F1") GB</strong></span>
+                                    <span>
+                                        <strong>@kvp.Value.ToString("F1") GB</strong>
+                                        <small class="text-muted ms-2">(@annualCO2.ToString("F2") kg CO₂/year)</small>
+                                    </span>
                                 </div>
                                 <div class="progress" style="height: 10px;">
                                     <div class="progress-bar" style="width: @percentage%"></div>
@@ -142,7 +146,8 @@
                                         <th>Date</th>
                                         <th>Department</th>
                                         <th>Current Storage (GB)</th>
-                                        <th>Current CO2 Impact (kg)</th>
+                                        <th>CO2 Impact (kg)</th>
+                                        <th>Annual CO2 (kg/year)</th>
                                         <th>Notes</th>
                                     </tr>
                                 </thead>
@@ -157,6 +162,9 @@
                                             <td>@usage.StorageGB.ToString("F1")</td>
                                             <td>
                                                 <span class="text-danger">@usage.CO2Impact.ToString("F2")</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-warning">@usage.AnnualCO2Impact.ToString("F3")</span>
                                             </td>
                                             <td>@(usage.Notes ?? "-")</td>
                                         </tr>
@@ -186,6 +194,7 @@
     private Dictionary<string, decimal> departmentChangePercentage = new();
     private decimal totalStorage = 0;
     private decimal totalCO2 = 0;
+    private decimal totalAnnualCO2 = 0;
     private int timeRangeDays = 30;
 
     protected override async Task OnInitializedAsync()
@@ -211,6 +220,9 @@
 
             totalStorage = departmentStorage.Values.Sum();
             totalCO2 = departmentCO2.Values.Sum();
+
+            // Calculate total annual CO2 based on 1.62g CO₂ per GB per year
+            totalAnnualCO2 = totalStorage * 0.00162m;
 
             // Sort departmentChangePercentage by value (ascending - lower change is better)
             departmentChangePercentage = departmentChangePercentage.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
