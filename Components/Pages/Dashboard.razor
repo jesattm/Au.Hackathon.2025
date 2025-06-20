@@ -10,7 +10,7 @@
     <div class="row mb-4">
         <div class="col">
             <h2>📊 Storage Usage Dashboard</h2>
-            <p class="text-muted">Track and compare storage usage across departments to reduce CO2 impact</p>
+            <p class="text-muted">Track current storage usage across departments to reduce CO2 impact</p>
         </div>
     </div>
 
@@ -19,7 +19,7 @@
         <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Total Storage</h5>
+                    <h5 class="card-title">Current Total Storage</h5>
                     <h3>@totalStorage.ToString("F1") GB</h3>
                 </div>
             </div>
@@ -27,7 +27,7 @@
         <div class="col-md-3">
             <div class="card bg-danger text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Total CO2 Impact</h5>
+                    <h5 class="card-title">Current CO2 Impact</h5>
                     <h3>@totalCO2.ToString("F1") kg</h3>
                 </div>
             </div>
@@ -55,7 +55,7 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h5>🏆 Department CO2 Ranking (Last 30 Days)</h5>
+                    <h5>🏆 Department CO2 Ranking</h5>
                     <small class="text-muted">Lower is better!</small>
                 </div>
                 <div class="card-body">
@@ -93,7 +93,7 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h5>📈 Average Storage per Department</h5>
+                    <h5>📈 Current Storage per Department</h5>
                 </div>
                 <div class="card-body">
                     @if (departmentStorage.Any())
@@ -127,8 +127,8 @@
         <div class="col">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5>📋 Recent Storage Records</h5>
-                    <a href="/add-usage" class="btn btn-primary btn-sm">+ Add New Record</a>
+                    <h5>📋 Department Storage Records</h5>
+                    <a href="/add-usage" class="btn btn-primary btn-sm">+ Update Storage</a>
                 </div>
                 <div class="card-body">
                     @if (recentUsage.Any())
@@ -139,8 +139,8 @@
                                     <tr>
                                         <th>Date</th>
                                         <th>Department</th>
-                                        <th>Storage (GB)</th>
-                                        <th>CO2 Impact (kg)</th>
+                                        <th>Current Storage (GB)</th>
+                                        <th>Current CO2 Impact (kg)</th>
                                         <th>Notes</th>
                                     </tr>
                                 </thead>
@@ -194,9 +194,13 @@
         try
         {
             departments = await StorageService.GetDepartmentsAsync();
+
+            // Get latest records (not summing up over time)
+            var latestUsages = await StorageService.GetLatestDepartmentUsageAsync();
             recentUsage = await StorageService.GetRecentUsageAsync(30);
-            departmentCO2 = await StorageService.GetDepartmentTotalCO2Async(30);
-            departmentStorage = await StorageService.GetDepartmentAverageStorageAsync(30);
+
+            departmentCO2 = await StorageService.GetDepartmentTotalCO2Async();
+            departmentStorage = await StorageService.GetDepartmentAverageStorageAsync();
 
             totalStorage = departmentStorage.Values.Sum();
             totalCO2 = departmentCO2.Values.Sum();

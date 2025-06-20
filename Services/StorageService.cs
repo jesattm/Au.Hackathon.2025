@@ -35,14 +35,32 @@ namespace AuHackathon2025.Services
                 .ToListAsync();
         }
 
+        // New method to get the latest storage record for each department
+        public async Task<List<StorageUsage>> GetLatestDepartmentUsageAsync()
+        {
+            // Get a list of the most recent storage usage entry for each department
+            var latestUsages = await _context.Departments
+                .Select(d => new
+                {
+                    Department = d,
+                    LatestUsage = d.StorageUsages
+                        .OrderByDescending(s => s.RecordDate)
+                        .FirstOrDefault()
+                })
+                .Where(x => x.LatestUsage != null)
+                .Select(x => x.LatestUsage)
+                .ToListAsync();
+
+            return latestUsages;
+        }
+
         public async Task<Dictionary<string, decimal>> GetDepartmentTotalCO2Async(int days = 30)
         {
-            var cutoffDate = DateTime.Now.AddDays(-days);
-            return await _context.StorageUsages
-                .Include(s => s.Department)
-                .Where(s => s.RecordDate >= cutoffDate)
+            // Instead of summing up CO2 over time, get the latest CO2 for each department
+            var latestUsages = await GetLatestDepartmentUsageAsync();
+            return latestUsages
                 .GroupBy(s => s.Department.Name)
-                .ToDictionaryAsync(
+                .ToDictionary(
                     g => g.Key,
                     g => g.Sum(s => s.CO2Impact)
                 );
@@ -50,14 +68,13 @@ namespace AuHackathon2025.Services
 
         public async Task<Dictionary<string, decimal>> GetDepartmentAverageStorageAsync(int days = 30)
         {
-            var cutoffDate = DateTime.Now.AddDays(-days);
-            return await _context.StorageUsages
-                .Include(s => s.Department)
-                .Where(s => s.RecordDate >= cutoffDate)
+            // Instead of averaging, get the latest storage amount for each department
+            var latestUsages = await GetLatestDepartmentUsageAsync();
+            return latestUsages
                 .GroupBy(s => s.Department.Name)
-                .ToDictionaryAsync(
+                .ToDictionary(
                     g => g.Key,
-                    g => g.Average(s => s.StorageGB)
+                    g => g.Sum(s => s.StorageGB)
                 );
         }
     }

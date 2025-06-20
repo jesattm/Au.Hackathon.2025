@@ -5,15 +5,15 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<PageTitle>Add Storage Usage</PageTitle>
+<PageTitle>Update Storage Usage</PageTitle>
 
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h4>📊 Add Storage Usage Record</h4>
-                    <p class="mb-0 text-muted">Track your department's storage usage to monitor CO2 impact</p>
+                    <h4>📊 Update Department Storage Total</h4>
+                    <p class="mb-0 text-muted">Enter the current total storage usage for your department</p>
                 </div>
                 <div class="card-body">
                     @if (!string.IsNullOrEmpty(errorMessage))
@@ -53,16 +53,16 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Storage Usage (GB)</label>
+                            <label class="form-label">Total Current Storage (GB)</label>
                             <InputNumber @bind-Value="newUsage.StorageGB" class="form-control" step="0.1" />
-                            <div class="form-text">Enter the total storage used in gigabytes</div>
+                            <div class="form-text">Enter the current total storage used in gigabytes (not the increase)</div>
                             <ValidationMessage For="() => newUsage.StorageGB" class="text-danger" />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Notes (Optional)</label>
                             <InputTextArea @bind-Value="newUsage.Notes" class="form-control" rows="3" />
-                            <div class="form-text">Any additional information about this usage</div>
+                            <div class="form-text">Any additional information about this update</div>
                         </div>
 
                         @if (newUsage.StorageGB > 0)
@@ -85,11 +85,11 @@
                                 @if (isSubmitting)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                    <span>Adding...</span>
+                                    <span>Updating...</span>
                                 }
                                 else
                                 {
-                                    <span>💾 Add Record</span>
+                                    <span>💾 Update Total</span>
                                 }
                             </button>
                         </div>
@@ -160,7 +160,7 @@
 
             await StorageService.AddStorageUsageAsync(newUsage);
 
-            successMessage = $"✅ Successfully added {newUsage.StorageGB} GB usage record!";
+            successMessage = $"✅ Successfully updated storage total to {newUsage.StorageGB} GB!";
 
             // Reset form
             newUsage = new StorageUsage { RecordDate = DateTime.Today };
