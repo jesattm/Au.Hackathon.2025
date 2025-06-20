@@ -1,0 +1,194 @@
+﻿@page "/add-usage"
+@using AuHackathon2025.Models
+@using AuHackathon2025.Services
+@inject StorageService StorageService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Storage Usage</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>📊 Add Storage Usage Record</h4>
+                    <p class="mb-0 text-muted">Track your department's storage usage to monitor CO2 impact</p>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success" role="alert">
+                            @successMessage
+                        </div>
+                    }
+
+                    <EditForm Model="newUsage" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Department</label>
+                            <InputSelect @bind-Value="newUsage.DepartmentId" class="form-select">
+                                <option value="0">-- Select Department --</option>
+                                @foreach (var dept in departments)
+                                {
+                                    <option value="@dept.Id">@dept.Name (@dept.EmployeeCount employees)</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => newUsage.DepartmentId" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Record Date</label>
+                            <InputDate @bind-Value="newUsage.RecordDate" class="form-control" />
+                            <ValidationMessage For="() => newUsage.RecordDate" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Storage Usage (GB)</label>
+                            <InputNumber @bind-Value="newUsage.StorageGB" class="form-control" step="0.1" />
+                            <div class="form-text">Enter the total storage used in gigabytes</div>
+                            <ValidationMessage For="() => newUsage.StorageGB" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notes (Optional)</label>
+                            <InputTextArea @bind-Value="newUsage.Notes" class="form-control" rows="3" />
+                            <div class="form-text">Any additional information about this usage</div>
+                        </div>
+
+                        @if (newUsage.StorageGB > 0)
+                        {
+                            <div class="alert alert-info">
+                                <h6>🌱 Environmental Impact Preview:</h6>
+                                <p class="mb-0">
+                                    <strong>@newUsage.StorageGB GB</strong> of storage will produce approximately
+                                    <strong class="text-danger">@((newUsage.StorageGB * 0.5m).ToString("F2")) kg of CO2</strong>
+                                </p>
+                                <small class="text-muted">Calculation: @newUsage.StorageGB GB × 0.5 kg CO2/GB</small>
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" @onclick="GoBack">
+                                ← Back to Dashboard
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <span>Adding...</span>
+                                }
+                                else
+                                {
+                                    <span>💾 Add Record</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+
+            <!-- Quick Add Examples -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6>💡 Quick Examples</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Typical Usage:</h6>
+                            <ul class="list-unstyled">
+                                <li>• Small team: 50-200 GB</li>
+                                <li>• Medium team: 200-500 GB</li>
+                                <li>• Large team: 500+ GB</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>CO2 Impact:</h6>
+                            <ul class="list-unstyled">
+                                <li>• 100 GB = 50 kg CO2</li>
+                                <li>• 500 GB = 250 kg CO2</li>
+                                <li>• 1000 GB = 500 kg CO2</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Department> departments = new();
+    private StorageUsage newUsage = new() { RecordDate = DateTime.Today };
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            departments = await StorageService.GetDepartmentsAsync();
+        }
+        catch
+        {
+            errorMessage = "Failed to load departments. Please refresh the page.";
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        isSubmitting = true;
+
+        try
+        {
+            if (newUsage.DepartmentId == 0)
+            {
+                errorMessage = "Please select a department.";
+                return;
+            }
+
+            if (newUsage.StorageGB <= 0)
+            {
+                errorMessage = "Storage usage must be greater than 0.";
+                return;
+            }
+
+            await StorageService.AddStorageUsageAsync(newUsage);
+
+            successMessage = $"✅ Successfully added {newUsage.StorageGB} GB usage record!";
+
+            // Reset form
+            newUsage = new StorageUsage { RecordDate = DateTime.Today };
+
+            // Redirect after a short delay
+            await Task.Delay(1500);
+            Navigation.NavigateTo("/dashboard");
+        }
+        catch
+        {
+            errorMessage = "Failed to save the record. Please try again.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/dashboard");
+    }
+}

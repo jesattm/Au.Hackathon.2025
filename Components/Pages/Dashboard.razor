@@ -1,0 +1,213 @@
+﻿@page "/dashboard"
+@using AuHackathon2025.Models
+@using AuHackathon2025.Services
+@inject StorageService StorageService
+@rendermode InteractiveServer
+
+<PageTitle>Storage Dashboard</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>📊 Storage Usage Dashboard</h2>
+            <p class="text-muted">Track and compare storage usage across departments to reduce CO2 impact</p>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Storage</h5>
+                    <h3>@totalStorage.ToString("F1") GB</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total CO2 Impact</h5>
+                    <h3>@totalCO2.ToString("F1") kg</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Departments</h5>
+                    <h3>@departments.Count</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Records</h5>
+                    <h3>@recentUsage.Count</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Comparison -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>🏆 Department CO2 Ranking (Last 30 Days)</h5>
+                    <small class="text-muted">Lower is better!</small>
+                </div>
+                <div class="card-body">
+                    @if (departmentCO2.Any())
+                    {
+                        @foreach (var (dept, co2, index) in departmentCO2.Select((kvp, i) => (kvp.Key, kvp.Value, i + 1)))
+                        {
+                            var badgeClass = index switch
+                            {
+                                1 => "badge-success",
+                                2 => "badge-warning",
+                                3 => "badge-info",
+                                _ => "badge-secondary"
+                            };
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="badge @badgeClass me-2">@index</span>
+                                    @dept
+                                </div>
+                                <div>
+                                    <strong>@co2.ToString("F1") kg CO2</strong>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">No data available yet. Add some storage usage records!</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📈 Average Storage per Department</h5>
+                </div>
+                <div class="card-body">
+                    @if (departmentStorage.Any())
+                    {
+                        @foreach (var kvp in departmentStorage.OrderByDescending(x => x.Value))
+                        {
+                            var percentage = totalStorage > 0 ? (kvp.Value / totalStorage * 100) : 0;
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>@kvp.Key</span>
+                                    <span><strong>@kvp.Value.ToString("F1") GB</strong></span>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar" style="width: @percentage%"></div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">No data available yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>📋 Recent Storage Records</h5>
+                    <a href="/add-usage" class="btn btn-primary btn-sm">+ Add New Record</a>
+                </div>
+                <div class="card-body">
+                    @if (recentUsage.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Department</th>
+                                        <th>Storage (GB)</th>
+                                        <th>CO2 Impact (kg)</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var usage in recentUsage.OrderByDescending(u => u.RecordDate).Take(10))
+                                    {
+                                        <tr>
+                                            <td>@usage.RecordDate.ToString("MMM dd, yyyy")</td>
+                                            <td>
+                                                <span class="badge badge-outline-primary">@usage.Department.Name</span>
+                                            </td>
+                                            <td>@usage.StorageGB.ToString("F1")</td>
+                                            <td>
+                                                <span class="text-danger">@usage.CO2Impact.ToString("F2")</span>
+                                            </td>
+                                            <td>@(usage.Notes ?? "-")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <p class="text-muted mb-3">No storage usage records yet.</p>
+                            <a href="/add-usage" class="btn btn-primary">Add First Record</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Department> departments = new();
+    private List<StorageUsage> recentUsage = new();
+    private Dictionary<string, decimal> departmentCO2 = new();
+    private Dictionary<string, decimal> departmentStorage = new();
+    private decimal totalStorage = 0;
+    private decimal totalCO2 = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            departments = await StorageService.GetDepartmentsAsync();
+            recentUsage = await StorageService.GetRecentUsageAsync(30);
+            departmentCO2 = await StorageService.GetDepartmentTotalCO2Async(30);
+            departmentStorage = await StorageService.GetDepartmentAverageStorageAsync(30);
+
+            totalStorage = departmentStorage.Values.Sum();
+            totalCO2 = departmentCO2.Values.Sum();
+
+            // Sort departmentCO2 by value (ascending - lower CO2 is better)
+            departmentCO2 = departmentCO2.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+        }
+        catch (Exception ex)
+        {
+            // Handle errors gracefully
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+    }
+}
