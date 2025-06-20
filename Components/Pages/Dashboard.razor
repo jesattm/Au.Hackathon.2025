@@ -10,7 +10,7 @@
     <div class="row mb-4">
         <div class="col">
             <h2>📊 Storage Usage Dashboard</h2>
-            <p class="text-muted">Track and compare storage usage across departments to reduce CO2 impact</p>
+            <p class="text-muted">Track current storage usage across departments to reduce CO2 impact</p>
         </div>
     </div>
 
@@ -19,7 +19,7 @@
         <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Total Storage</h5>
+                    <h5 class="card-title">Current Total Storage</h5>
                     <h3>@totalStorage.ToString("F1") GB</h3>
                 </div>
             </div>
@@ -27,8 +27,8 @@
         <div class="col-md-3">
             <div class="card bg-danger text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Total CO2 Impact</h5>
-                    <h3>@totalCO2.ToString("F1") kg</h3>
+                    <h5 class="card-title">Annual CO2 Impact</h5>
+                    <h3>@totalAnnualCO2.ToString("F2") kg/year</h3>
                 </div>
             </div>
         </div>
@@ -55,13 +55,13 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h5>🏆 Department CO2 Ranking (Last 30 Days)</h5>
-                    <small class="text-muted">Lower is better!</small>
+                    <h5>🏆 Department Storage Change Ranking</h5>
+                    <small class="text-muted">Last @timeRangeDays days</small>
                 </div>
                 <div class="card-body">
-                    @if (departmentCO2.Any())
+                    @if (departmentChangePercentage.Any())
                     {
-                        @foreach (var (dept, co2, index) in departmentCO2.Select((kvp, i) => (kvp.Key, kvp.Value, i + 1)))
+                        @foreach (var (dept, change, index) in departmentChangePercentage.Select((kvp, i) => (kvp.Key, kvp.Value, i + 1)))
                         {
                             var badgeClass = index switch
                             {
@@ -71,13 +71,15 @@
                                 _ => "badge-secondary"
                             };
 
+                            var textClass = change < 0 ? "text-success" : change > 0 ? "text-danger" : "";
+
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <div>
                                     <span class="badge @badgeClass me-2">@index</span>
                                     @dept
                                 </div>
                                 <div>
-                                    <strong>@co2.ToString("F1") kg CO2</strong>
+                                    <strong class="@textClass">@(change.ToString("+0.0;-0.0;0"))%</strong>
                                 </div>
                             </div>
                         }
@@ -93,7 +95,7 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h5>📈 Average Storage per Department</h5>
+                    <h5>📈 Current Storage per Department</h5>
                 </div>
                 <div class="card-body">
                     @if (departmentStorage.Any())
@@ -101,11 +103,15 @@
                         @foreach (var kvp in departmentStorage.OrderByDescending(x => x.Value))
                         {
                             var percentage = totalStorage > 0 ? (kvp.Value / totalStorage * 100) : 0;
+                            var annualCO2 = kvp.Value * 0.00162m;
 
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between">
                                     <span>@kvp.Key</span>
-                                    <span><strong>@kvp.Value.ToString("F1") GB</strong></span>
+                                    <span>
+                                        <strong>@kvp.Value.ToString("F1") GB</strong>
+                                        <small class="text-muted ms-2">(@annualCO2.ToString("F2") kg CO₂/year)</small>
+                                    </span>
                                 </div>
                                 <div class="progress" style="height: 10px;">
                                     <div class="progress-bar" style="width: @percentage%"></div>
@@ -127,8 +133,8 @@
         <div class="col">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5>📋 Recent Storage Records</h5>
-                    <a href="/add-usage" class="btn btn-primary btn-sm">+ Add New Record</a>
+                    <h5>📋 Department Storage Records</h5>
+                    <a href="/add-usage" class="btn btn-primary btn-sm">+ Update Storage</a>
                 </div>
                 <div class="card-body">
                     @if (recentUsage.Any())
@@ -139,8 +145,8 @@
                                     <tr>
                                         <th>Date</th>
                                         <th>Department</th>
-                                        <th>Storage (GB)</th>
-                                        <th>CO2 Impact (kg)</th>
+                                        <th>Current Storage (GB)</th>
+                                        <th>Annual CO2 (kg/year)</th>
                                         <th>Notes</th>
                                     </tr>
                                 </thead>
@@ -150,11 +156,11 @@
                                         <tr>
                                             <td>@usage.RecordDate.ToString("MMM dd, yyyy")</td>
                                             <td>
-                                                <span class="badge badge-outline-primary">@usage.Department.Name</span>
+                                                <span class="badge bg-info text-dark">@usage.Department.Name</span>
                                             </td>
                                             <td>@usage.StorageGB.ToString("F1")</td>
                                             <td>
-                                                <span class="text-danger">@usage.CO2Impact.ToString("F2")</span>
+                                                <span class="text-danger">@usage.AnnualCO2Impact.ToString("F3")</span>
                                             </td>
                                             <td>@(usage.Notes ?? "-")</td>
                                         </tr>
@@ -179,10 +185,11 @@
 @code {
     private List<Department> departments = new();
     private List<StorageUsage> recentUsage = new();
-    private Dictionary<string, decimal> departmentCO2 = new();
     private Dictionary<string, decimal> departmentStorage = new();
+    private Dictionary<string, decimal> departmentChangePercentage = new();
     private decimal totalStorage = 0;
-    private decimal totalCO2 = 0;
+    private decimal totalAnnualCO2 = 0;
+    private int timeRangeDays = 30;
 
     protected override async Task OnInitializedAsync()
     {
@@ -194,15 +201,23 @@
         try
         {
             departments = await StorageService.GetDepartmentsAsync();
-            recentUsage = await StorageService.GetRecentUsageAsync(30);
-            departmentCO2 = await StorageService.GetDepartmentTotalCO2Async(30);
-            departmentStorage = await StorageService.GetDepartmentAverageStorageAsync(30);
+
+            // Get latest records
+            var latestUsages = await StorageService.GetLatestDepartmentUsageAsync();
+            recentUsage = await StorageService.GetRecentUsageAsync(timeRangeDays);
+
+            departmentStorage = await StorageService.GetDepartmentAverageStorageAsync();
+
+            // Get percentage change over time for each department
+            departmentChangePercentage = await StorageService.GetDepartmentStorageChangePercentageAsync(timeRangeDays);
 
             totalStorage = departmentStorage.Values.Sum();
-            totalCO2 = departmentCO2.Values.Sum();
 
-            // Sort departmentCO2 by value (ascending - lower CO2 is better)
-            departmentCO2 = departmentCO2.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            // Calculate total annual CO2 based on 1.62g CO₂ per GB per year
+            totalAnnualCO2 = totalStorage * 0.00162m;
+
+            // Sort departmentChangePercentage by value (ascending - lower change is better)
+            departmentChangePercentage = departmentChangePercentage.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
         }
         catch (Exception ex)
         {

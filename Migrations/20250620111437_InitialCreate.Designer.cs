@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AuHackathon2025.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250620090804_InitialCreate")]
+    [Migration("20250620111437_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
