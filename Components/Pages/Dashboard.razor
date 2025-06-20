@@ -27,14 +27,6 @@
         <div class="col-md-3">
             <div class="card bg-danger text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Current CO2 Impact</h5>
-                    <h3>@totalCO2.ToString("F1") kg</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
                     <h5 class="card-title">Annual CO2 Impact</h5>
                     <h3>@totalAnnualCO2.ToString("F2") kg/year</h3>
                 </div>
@@ -45,6 +37,14 @@
                 <div class="card-body">
                     <h5 class="card-title">Departments</h5>
                     <h3>@departments.Count</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Records</h5>
+                    <h3>@recentUsage.Count</h3>
                 </div>
             </div>
         </div>
@@ -146,7 +146,6 @@
                                         <th>Date</th>
                                         <th>Department</th>
                                         <th>Current Storage (GB)</th>
-                                        <th>CO2 Impact (kg)</th>
                                         <th>Annual CO2 (kg/year)</th>
                                         <th>Notes</th>
                                     </tr>
@@ -161,10 +160,7 @@
                                             </td>
                                             <td>@usage.StorageGB.ToString("F1")</td>
                                             <td>
-                                                <span class="text-danger">@usage.CO2Impact.ToString("F2")</span>
-                                            </td>
-                                            <td>
-                                                <span class="text-warning">@usage.AnnualCO2Impact.ToString("F3")</span>
+                                                <span class="text-danger">@usage.AnnualCO2Impact.ToString("F3")</span>
                                             </td>
                                             <td>@(usage.Notes ?? "-")</td>
                                         </tr>
@@ -189,11 +185,9 @@
 @code {
     private List<Department> departments = new();
     private List<StorageUsage> recentUsage = new();
-    private Dictionary<string, decimal> departmentCO2 = new();
     private Dictionary<string, decimal> departmentStorage = new();
     private Dictionary<string, decimal> departmentChangePercentage = new();
     private decimal totalStorage = 0;
-    private decimal totalCO2 = 0;
     private decimal totalAnnualCO2 = 0;
     private int timeRangeDays = 30;
 
@@ -208,18 +202,16 @@
         {
             departments = await StorageService.GetDepartmentsAsync();
 
-            // Get latest records (not summing up over time)
+            // Get latest records
             var latestUsages = await StorageService.GetLatestDepartmentUsageAsync();
             recentUsage = await StorageService.GetRecentUsageAsync(timeRangeDays);
 
-            departmentCO2 = await StorageService.GetDepartmentTotalCO2Async();
             departmentStorage = await StorageService.GetDepartmentAverageStorageAsync();
 
             // Get percentage change over time for each department
             departmentChangePercentage = await StorageService.GetDepartmentStorageChangePercentageAsync(timeRangeDays);
 
             totalStorage = departmentStorage.Values.Sum();
-            totalCO2 = departmentCO2.Values.Sum();
 
             // Calculate total annual CO2 based on 1.62g CO₂ per GB per year
             totalAnnualCO2 = totalStorage * 0.00162m;

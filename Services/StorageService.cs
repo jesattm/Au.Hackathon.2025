@@ -35,7 +35,7 @@ namespace AuHackathon2025.Services
                 .ToListAsync();
         }
 
-        // New method to get the latest storage record for each department
+        // Get the latest storage record for each department
         public async Task<List<StorageUsage>> GetLatestDepartmentUsageAsync()
         {
             // Get a list of the most recent storage usage entry for each department
@@ -54,21 +54,9 @@ namespace AuHackathon2025.Services
             return latestUsages;
         }
 
-        public async Task<Dictionary<string, decimal>> GetDepartmentTotalCO2Async(int days = 30)
-        {
-            // Instead of summing up CO2 over time, get the latest CO2 for each department
-            var latestUsages = await GetLatestDepartmentUsageAsync();
-            return latestUsages
-                .GroupBy(s => s.Department.Name)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Sum(s => s.CO2Impact)
-                );
-        }
-
         public async Task<Dictionary<string, decimal>> GetDepartmentAverageStorageAsync(int days = 30)
         {
-            // Instead of averaging, get the latest storage amount for each department
+            // Get the latest storage amount for each department
             var latestUsages = await GetLatestDepartmentUsageAsync();
             return latestUsages
                 .GroupBy(s => s.Department.Name)
@@ -87,31 +75,31 @@ namespace AuHackathon2025.Services
                 .Where(s => s.RecordDate >= cutoffDate)
                 .OrderBy(s => s.RecordDate)
                 .ToListAsync();
-            
+
             // Group by department and calculate percentage change
             var changes = new Dictionary<string, decimal>();
-            
+
             // Group records by department
             var departmentGroups = allRecords.GroupBy(s => s.Department.Name);
-            
+
             foreach (var group in departmentGroups)
             {
                 var departmentName = group.Key;
                 var recordsByDate = group.OrderBy(s => s.RecordDate).ToList();
-                
+
                 // Need at least two records to calculate change
                 if (recordsByDate.Count >= 2)
                 {
                     var oldestRecord = recordsByDate.First();
                     var newestRecord = recordsByDate.Last();
-                    
+
                     // Calculate percentage change
                     decimal percentageChange = 0;
                     if (oldestRecord.StorageGB > 0)
                     {
                         percentageChange = ((newestRecord.StorageGB - oldestRecord.StorageGB) / oldestRecord.StorageGB) * 100;
                     }
-                    
+
                     changes[departmentName] = percentageChange;
                 }
                 else if (recordsByDate.Count == 1)
@@ -120,7 +108,7 @@ namespace AuHackathon2025.Services
                     changes[departmentName] = 0;
                 }
             }
-            
+
             return changes;
         }
     }

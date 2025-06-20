@@ -70,17 +70,11 @@
                             <div class="alert alert-info">
                                 <h6>🌱 Environmental Impact Preview:</h6>
                                 <p class="mb-0">
-                                    <strong>@newUsage.StorageGB GB</strong> of storage will produce approximately
-                                    <strong class="text-danger">@((newUsage.StorageGB * 0.5m).ToString("F2")) kg of CO2</strong>
-                                </p>
-                                <p class="mb-0 mt-2">
-                                    Annual CO2 emissions:
-                                    <strong class="text-danger">@((newUsage.StorageGB * 0.00162m).ToString("F3")) kg/year</strong>
+                                    <strong>@newUsage.StorageGB GB</strong> of storage will produce
+                                    <strong class="text-danger">@((newUsage.StorageGB * 0.00162m).ToString("F3")) kg CO₂/year</strong>
                                 </p>
                                 <small class="text-muted">
-                                    Calculations:
-                                    <br>• Immediate: @newUsage.StorageGB GB × 0.5 kg CO2/GB
-                                    <br>• Annual: @newUsage.StorageGB GB × 1.62g CO2/GB/year = @newUsage.StorageGB GB × 0.00162 kg CO2/GB/year
+                                    Calculation: @newUsage.StorageGB GB × 1.62g CO₂/GB/year = @newUsage.StorageGB GB × 0.00162 kg CO₂/GB/year
                                 </small>
                             </div>
                         }
@@ -112,20 +106,12 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h6>Immediate CO2 Impact:</h6>
-                            <ul class="list-unstyled">
-                                <li>• 1000 GB = 500 kg CO2</li>
-                                <li>• 5000 GB = 2500 kg CO2</li>
-                                <li>• 10000 GB = 5000 kg CO2</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <h6>Annual CO2 Impact:</h6>
                             <ul class="list-unstyled">
-                                <li>• 1000 GB = 1.62 kg CO2/year</li>
-                                <li>• 5000 GB = 8.10 kg CO2/year</li>
-                                <li>• 10000 GB = 16.20 kg CO2/year</li>
+                                <li>• 1000 GB = 1.62 kg CO₂/year</li>
+                                <li>• 5000 GB = 8.10 kg CO₂/year</li>
+                                <li>• 10000 GB = 16.20 kg CO₂/year</li>
                             </ul>
                         </div>
                     </div>

@@ -15,12 +15,6 @@ public class StorageUsage
     [Required]
     public decimal StorageGB { get; set; }
 
-    // Calculated CO2 impact (kg) - using fixed factor
-    public decimal CO2Impact => StorageGB * CO2_FACTOR_PER_GB;
-
-    // CO2 per GB of storage (kg) - industry average
-    private const decimal CO2_FACTOR_PER_GB = 0.5m;
-
     // Annual CO2 emissions (kg) - 1.62g CO₂ per GB per year converted to kg
     public decimal AnnualCO2Impact => StorageGB * ANNUAL_CO2_FACTOR_PER_GB;
 
