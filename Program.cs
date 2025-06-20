@@ -1,4 +1,4 @@
-using Au.Hackathon._2025.Components;
+using AuHackathon2025.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
